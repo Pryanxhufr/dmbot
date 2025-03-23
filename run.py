@@ -126,7 +126,7 @@ async def unblock_user(session_name, user_to_unblock):
                     # Try as user ID
                     user_id = int(user_to_unblock)
                     user = await client.get_entity(user_id)
-                
+
                 await client(functions.contacts.UnblockRequest(id=user_id))
                 return True, None
             except ValueError:
@@ -148,7 +148,7 @@ async def clear_chat(session_name, user_to_clear):
                     # Try as user ID
                     user_id = int(user_to_clear)
                     user = await client.get_entity(user_id)
-                
+
                 await client(DeleteHistoryRequest(peer=user, max_id=0, revoke=True))
                 return True, None
             except ValueError:
@@ -170,7 +170,7 @@ async def block_user(session_name, user_to_block):
                     # Try as user ID
                     user_id = int(user_to_block)
                     user = await client.get_entity(user_id)
-                
+
                 await client(functions.contacts.BlockRequest(id=user_id))
                 return True, None
             except ValueError:
@@ -203,26 +203,26 @@ def handle_dm_command(message):
     markup = InlineKeyboardMarkup()
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    
+
     for session in working_sessions:
         account_name = loop.run_until_complete(get_account_name(session))
         markup.add(InlineKeyboardButton(
             account_name.strip(), 
             callback_data=f'dm:{session}:{user_to_dm}'
         ))
-    
+
     loop.close()
-    
+
     bot.reply_to(message, "Select account to DM with:", reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('dm:'))
 def handle_dm_selection(call):
     chat_id = call.message.chat.id
     _, session_name, user_to_dm = call.data.split(':', 2)
-    
+
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    
+
     async def get_user_info():
         try:
             async with TelegramClient(session_name.replace('.session', ''), API_ID, API_HASH) as client:
@@ -231,11 +231,11 @@ def handle_dm_selection(call):
                         user = await client.get_entity(user_to_dm)
                     else:
                         user = await client.get_entity(int(user_to_dm))
-                    
+
                     full_name = f"{user.first_name} {user.last_name}" if user.last_name else user.first_name
                     markup = InlineKeyboardMarkup()
                     markup.add(InlineKeyboardButton("Start Chat", callback_data=f'user:{user.id}'))
-                    
+
                     bot.edit_message_text(
                         f"━━━━━━━━━━━━━━━\n🧑‍💻 𝗙𝘂𝗹𝗹 𝗡𝗮𝗺𝗲: {full_name}\n🔗 𝗨𝘀𝗲𝗿𝗻𝗮𝗺𝗲: {('@' + user.username) if user.username else '❌ 𝗡𝗼𝗻𝗲'}\n🆔 𝗨𝘀𝗲𝗿 𝗜𝗗: {user.id}\n━━━━━━━━━━━━━━━",
                         chat_id,
@@ -249,7 +249,7 @@ def handle_dm_selection(call):
                     bot.edit_message_text(f"Error: {str(e)}", chat_id, call.message.message_id)
         except Exception as e:
             bot.edit_message_text(f"Session error: {str(e)}", chat_id, call.message.message_id)
-    
+
     loop.run_until_complete(get_user_info())
     loop.close()
 
@@ -275,16 +275,16 @@ def handle_block_command(message):
     markup = InlineKeyboardMarkup()
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    
+
     for session in working_sessions:
         account_name = loop.run_until_complete(get_account_name(session))
         markup.add(InlineKeyboardButton(
             account_name.strip(), 
             callback_data=f'block:{session}:{user_to_block}'
         ))
-    
+
     loop.close()
-    
+
     bot.reply_to(message, "Select account to block with:", reply_markup=markup)
 
 @bot.message_handler(func=lambda message: message.text and message.text.startswith('.unblock'))
@@ -309,28 +309,28 @@ def handle_unblock_command(message):
     markup = InlineKeyboardMarkup()
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    
+
     for session in working_sessions:
         account_name = loop.run_until_complete(get_account_name(session))
         markup.add(InlineKeyboardButton(
             account_name.strip(), 
             callback_data=f'unblock:{session}:{user_to_unblock}'
         ))
-    
+
     loop.close()
-    
+
     bot.reply_to(message, "Select account to unblock with:", reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('unblock:'))
 def handle_unblock_selection(call):
     chat_id = call.message.chat.id
     _, session_name, user_to_unblock = call.data.split(':', 2)
-    
+
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     success, error = loop.run_until_complete(unblock_user(session_name, user_to_unblock))
     loop.close()
-    
+
     if success:
         bot.edit_message_text(
             f"Successfully unblocked user {user_to_unblock}",
@@ -366,28 +366,28 @@ def handle_clear_chat_command(message):
     markup = InlineKeyboardMarkup()
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    
+
     for session in working_sessions:
         account_name = loop.run_until_complete(get_account_name(session))
         markup.add(InlineKeyboardButton(
             account_name.strip(), 
             callback_data=f'clear:{session}:{user_to_clear}'
         ))
-    
+
     loop.close()
-    
+
     bot.reply_to(message, "Select account to clear chat with:", reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('clear:'))
 def handle_clear_selection(call):
     chat_id = call.message.chat.id
     _, session_name, user_to_clear = call.data.split(':', 2)
-    
+
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     success, error = loop.run_until_complete(clear_chat(session_name, user_to_clear))
     loop.close()
-    
+
     if success:
         bot.edit_message_text(
             f"Successfully cleared chat with {user_to_clear}",
@@ -405,12 +405,12 @@ def handle_clear_selection(call):
 def handle_block_selection(call):
     chat_id = call.message.chat.id
     _, session_name, user_to_block = call.data.split(':', 2)
-    
+
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     success, error = loop.run_until_complete(block_user(session_name, user_to_block))
     loop.close()
-    
+
     if success:
         bot.edit_message_text(
             f"Successfully blocked user {user_to_block}",
@@ -423,6 +423,338 @@ def handle_block_selection(call):
             chat_id,
             call.message.message_id
         )
+
+async def get_account_info(session_name):
+    try:
+        async with TelegramClient(session_name.replace('.session', ''), API_ID, API_HASH) as client:
+            me = await client.get_me()
+            full = await client(functions.users.GetFullUserRequest('me'))
+            about = full.full_user.about
+            photos = await client.get_profile_photos('me')
+            photo = photos[0] if photos else None
+            await client.download_media(photo, "profile_pic.jpg") if photo else None
+            return me, about, bool(photo)
+    except Exception as e:
+        print(f"Error getting account info: {e}")
+        return None, None, False
+
+async def set_profile_photo(session_name, photo_path):
+    try:
+        async with TelegramClient(session_name.replace('.session', ''), API_ID, API_HASH) as client:
+            await client(functions.photos.UploadProfilePhotoRequest(
+                file=await client.upload_file(photo_path)
+            ))
+            return True
+    except Exception as e:
+        print(f"Error setting profile photo: {e}")
+        return False
+
+async def delete_profile_photo(session_name):
+    try:
+        async with TelegramClient(session_name.replace('.session', ''), API_ID, API_HASH) as client:
+            photos = await client.get_profile_photos('me')
+            for photo in photos:
+                await client(functions.photos.DeletePhotosRequest(
+                    id=[photo]
+                ))
+            return True
+    except Exception as e:
+        print(f"Error deleting profile photos: {e}")
+        return False
+
+async def set_bio(session_name, bio_text):
+    try:
+        async with TelegramClient(session_name.replace('.session', ''), API_ID, API_HASH) as client:
+            await client(functions.account.UpdateProfileRequest(
+                about=bio_text
+            ))
+            return True
+    except Exception as e:
+        print(f"Error setting bio: {e}")
+        return False
+
+async def set_name(session_name, first_name, last_name=""):
+    try:
+        async with TelegramClient(session_name.replace('.session', ''), API_ID, API_HASH) as client:
+            await client(functions.account.UpdateProfileRequest(
+                first_name=first_name,
+                last_name=last_name
+            ))
+            return True
+    except Exception as e:
+        print(f"Error setting name: {e}")
+        return False
+
+async def set_username(session_name, username):
+    try:
+        async with TelegramClient(session_name.replace('.session', ''), API_ID, API_HASH) as client:
+            await client(functions.account.UpdateUsernameRequest(
+                username=username
+            ))
+            return True
+    except Exception as e:
+        print(f"Error setting username: {e}")
+        return False
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("changename:"))
+def handle_change_name(call):
+    session_name = call.data.split(":")[1]
+    markup = InlineKeyboardMarkup()
+    markup.row(InlineKeyboardButton("Back", callback_data=f"profile:{session_name}"))
+    try:
+        bot.edit_message_text("Send me the new name (format: FirstName LastName)", 
+                            call.message.chat.id, 
+                            call.message.message_id,
+                            reply_markup=markup)
+    except:
+        bot.delete_message(call.message.chat.id, call.message.message_id)
+        bot.send_message(call.message.chat.id,
+                        "Send me the new name (format: FirstName LastName)",
+                        reply_markup=markup)
+
+async def delete_bio(session_name):
+    try:
+        async with TelegramClient(session_name.replace('.session', ''), API_ID, API_HASH) as client:
+            await client(functions.account.UpdateProfileRequest(
+                about=""
+            ))
+            return True
+    except Exception as e:
+        print(f"Error deleting bio: {e}")
+        return False
+
+def create_account_markup(session_name):
+    markup = InlineKeyboardMarkup()
+    markup.row(InlineKeyboardButton("Change Name", callback_data=f"changename:{session_name}"))
+    markup.row(InlineKeyboardButton("Change Username", callback_data=f"changeusername:{session_name}"))
+    markup.row(
+        InlineKeyboardButton("Change PFP", callback_data=f"changepfp:{session_name}"),
+        InlineKeyboardButton("Change Bio", callback_data=f"changebio:{session_name}")
+    )
+    markup.row(InlineKeyboardButton("Back", callback_data="back"))
+    return markup
+
+def create_pfp_markup(session_name):
+    markup = InlineKeyboardMarkup()
+    markup.row(
+        InlineKeyboardButton("Delete PFP", callback_data=f"delpfp:{session_name}"),
+        InlineKeyboardButton("Back", callback_data="back")
+    )
+    return markup
+
+def create_bio_markup(session_name):
+    markup = InlineKeyboardMarkup()
+    markup.row(
+        InlineKeyboardButton("Delete Bio", callback_data=f"delbio:{session_name}"),
+        InlineKeyboardButton("Back", callback_data="back")
+    )
+    return markup
+
+@bot.message_handler(func=lambda message: message.text == "./")
+def handle_dot_slash(message):
+    if message.chat.id in active_clients:
+        return
+
+    working_sessions = get_working_sessions()
+    if not working_sessions:
+        bot.reply_to(message, "No working accounts found.")
+        return
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    markup = InlineKeyboardMarkup()
+    for session in working_sessions:
+        account_name = loop.run_until_complete(get_account_name(session))
+        markup.add(InlineKeyboardButton(account_name.strip(), callback_data=f"profile:{session}"))
+
+    loop.close()
+    bot.delete_message(message.chat.id, message.message_id)
+    bot.send_message(message.chat.id, "Select an account:", reply_markup=markup)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("profile:"))
+def handle_profile_selection(call):
+    session_name = call.data.split(":")[1]
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    me, bio, has_photo = loop.run_until_complete(get_account_info(session_name))
+    loop.close()
+
+    name = f"{me.first_name} {me.last_name}" if me.last_name else me.first_name
+    pfp_status = "" if has_photo else "\n🖼 𝗣𝗿𝗼𝗳𝗶𝗹𝗲: ❌ 𝗡𝗼𝗻𝗲"
+    bio_text = f"\nℹ️ 𝗕𝗶𝗼: {bio if bio else '❌ 𝗡𝗼𝗻𝗲'}"
+    text = f"━━━━━━━━━━━━━━━\n🧑‍💻 𝗙𝘂𝗹𝗹 𝗡𝗮𝗺𝗲: {name}\n🔗 𝗨𝘀𝗲𝗿𝗻𝗮𝗺𝗲: {('@' + me.username) if me.username else '❌ 𝗡𝗼𝗻𝗲'}\n🆔 𝗨𝘀𝗲𝗿 𝗜𝗗: {me.id}{bio_text}{pfp_status}\n━━━━━━━━━━━━━━━"
+    markup = create_account_markup(session_name)
+
+    if has_photo:
+        with open("profile_pic.jpg", "rb") as photo:
+            bot.delete_message(call.message.chat.id, call.message.message_id)
+            bot.send_photo(call.message.chat.id, photo, caption=text, reply_markup=markup)
+            os.remove("profile_pic.jpg")
+    else:
+        bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("changepfp:"))
+def handle_change_pfp(call):
+    session_name = call.data.split(":")[1]
+    markup = create_pfp_markup(session_name)
+    try:
+        bot.edit_message_text("Send me the pfp you want to apply on acc", 
+                            call.message.chat.id, 
+                            call.message.message_id, 
+                            reply_markup=markup)
+    except:
+        bot.delete_message(call.message.chat.id, call.message.message_id)
+        bot.send_message(call.message.chat.id,
+                        "Send me the pfp you want to apply on acc",
+                        reply_markup=markup)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("delpfp:"))
+def handle_delete_pfp(call):
+    session_name = call.data.split(":")[1]
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(delete_profile_photo(session_name))
+    loop.close()
+    bot.delete_message(call.message.chat.id, call.message.message_id)
+    os._exit(0)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("changebio:"))
+def handle_change_bio(call):
+    session_name = call.data.split(":")[1]
+    markup = create_bio_markup(session_name)
+    try:
+        bot.delete_message(call.message.chat.id, call.message.message_id)
+        bot.send_message(call.message.chat.id, 
+                        "Send me the bio you want to apply on acc",
+                        reply_markup=markup)
+    except Exception as e:
+        print(f"Error in handle_change_bio: {e}")
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("delbio:"))
+def handle_delete_bio(call):
+    session_name = call.data.split(":")[1]
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(delete_bio(session_name))
+    loop.close()
+    bot.delete_message(call.message.chat.id, call.message.message_id)
+    os._exit(0)
+
+@bot.callback_query_handler(func=lambda call: call.data == "back")
+def handle_back(call):
+    bot.delete_message(call.message.chat.id, call.message.message_id)
+    os._exit(0)
+
+@bot.message_handler(content_types=['photo'])
+def handle_photo(message):
+    if not message.reply_to_message:
+        return
+
+    original_text = message.reply_to_message.text
+    if original_text != "Send me the pfp you want to apply on acc":
+        return
+
+    file_info = bot.get_file(message.photo[-1].file_id)
+    downloaded_file = bot.download_file(file_info.file_path)
+
+    with open("profile_photo.jpg", 'wb') as new_file:
+        new_file.write(downloaded_file)
+
+    markup = message.reply_to_message.reply_markup
+    session_name = None
+    for row in markup.keyboard:
+        for button in row:
+            if button.callback_data.startswith("delpfp:"):
+                session_name = button.callback_data.split(":")[1]
+                break
+        if session_name:
+            break
+
+    if session_name:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(set_profile_photo(session_name, "profile_photo.jpg"))
+        me, bio, has_photo = loop.run_until_complete(get_account_info(session_name))
+        loop.close()
+
+        os.remove("profile_photo.jpg")
+        bot.delete_message(message.chat.id, message.message_id)
+        bot.edit_message_text(f"Bio: {bio if bio else 'No bio set'}", 
+                            message.chat.id,
+                            message.reply_to_message.message_id,
+                            reply_markup=create_account_markup(session_name))
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("changeusername:"))
+def handle_change_username(call):
+    session_name = call.data.split(":")[1]
+    markup = InlineKeyboardMarkup()
+    markup.row(InlineKeyboardButton("Back", callback_data=f"profile:{session_name}"))
+    try:
+        bot.edit_message_text("Send me the new username (without @)", 
+                            call.message.chat.id, 
+                            call.message.message_id,
+                            reply_markup=markup)
+    except:
+        bot.delete_message(call.message.chat.id, call.message.message_id)
+        bot.send_message(call.message.chat.id,
+                        "Send me the new username (without @)",
+                        reply_markup=markup)
+
+@bot.message_handler(func=lambda message: message.text and not message.text.startswith("/"))
+def handle_text(message):
+    if not message.reply_to_message:
+        return
+
+    original_text = message.reply_to_message.text
+    if original_text not in ["Send me the bio you want to apply on acc", 
+                           "Send me the new name (format: FirstName LastName)",
+                           "Send me the new username (without @)"]:
+        return
+
+    markup = message.reply_to_message.reply_markup
+    session_name = None
+    for row in markup.keyboard:
+        for button in row:
+            if button.callback_data.startswith("delbio:") or button.callback_data.startswith("profile:"):
+                session_name = button.callback_data.split(":")[1]
+                break
+        if session_name:
+            break
+
+    if session_name:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        if message.reply_to_message.text == "Send me the new name (format: FirstName LastName)":
+            names = message.text.split(maxsplit=1)
+            first_name = names[0]
+            last_name = names[1] if len(names) > 1 else ""
+            success = loop.run_until_complete(set_name(session_name, first_name, last_name))
+        elif message.reply_to_message.text == "Send me the new username (without @)":
+            username = message.text.strip('@')  # Remove @ if user included it
+            success = loop.run_until_complete(set_username(session_name, username))
+        else:
+            success = loop.run_until_complete(set_bio(session_name, message.text))
+
+        if success:
+            me, bio, has_photo = loop.run_until_complete(get_account_info(session_name))
+            loop.close()
+
+            name = f"{me.first_name} {me.last_name}" if me.last_name else me.first_name
+            bio_text = bio if bio and bio.strip() else 'No bio set'
+            bot.delete_message(message.chat.id, message.message_id)
+            name = f"{me.first_name} {me.last_name}" if me.last_name else me.first_name
+            bio_text = f"\nℹ️ 𝗕𝗶𝗼: {bio if bio else '❌ 𝗡𝗼𝗻𝗲'}"
+            pfp_status = ""  # We don't need pfp status here since it's a bio/name update
+            text = f"━━━━━━━━━━━━━━━\n🧑‍💻 𝗙𝘂𝗹𝗹 𝗡𝗮𝗺𝗲: {name}\n🔗 𝗨𝘀𝗲𝗿𝗻𝗮𝗺𝗲: {('@' + me.username) if me.username else '❌ 𝗡𝗼𝗻𝗲'}\n🆔 𝗨𝘀𝗲𝗿 𝗜𝗗: {me.id}{bio_text}\n━━━━━━━━━━━━━━━"
+            bot.edit_message_text(text,
+                                message.chat.id,
+                                message.reply_to_message.message_id,
+                                reply_markup=create_account_markup(session_name))
+            os._exit(0)  # Restart the bot to apply changes
+        else:
+            bot.reply_to(message, "Failed to update profile")
 
 @bot.message_handler(commands=['start'])
 def start_message(message):
@@ -437,12 +769,12 @@ def start_message(message):
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    
+
     markup = InlineKeyboardMarkup()
     for session in working_sessions:
         account_name = loop.run_until_complete(get_account_name(session))
         markup.add(InlineKeyboardButton(account_name.strip(), callback_data=f'session:{session}'))
-    
+
     loop.close()
     bot.edit_message_text('Select an account:', chat_id, msg.message_id, reply_markup=markup)
 
@@ -475,12 +807,12 @@ def back_to_sessions(call):
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    
+
     markup = InlineKeyboardMarkup()
     for session in working_sessions:
         account_name = loop.run_until_complete(get_account_name(session))
         markup.add(InlineKeyboardButton(account_name.strip(), callback_data=f'session:{session}'))
-    
+
     loop.close()
 
     bot.edit_message_text('Select an account:', chat_id, call.message.message_id, reply_markup=markup)
