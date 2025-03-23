@@ -846,7 +846,7 @@ def handle_user_selection(call):
 
     async def mark_messages_as_read(client, user_id):
         try:
-            await client.send_read_acknowledge(user_id)
+            #await client.send_read_acknowledge(user_id)
             return True
         except Exception as e:
             print(f"Error marking messages as read: {e}")
