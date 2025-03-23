@@ -74,14 +74,18 @@ async def get_recent_users(session_file):
 async def refresh_users_list(chat_id, session_name, message_id):
     recent_users = await get_recent_users(session_name)
     markup = InlineKeyboardMarkup()
+    random_code = ''.join(random.choices('0123456789ABCDEF', k=16))
 
     for user, status, unread_count in recent_users:
         full_name = f"{user.first_name} {user.last_name}" if user.last_name else user.first_name
         display_text = f"{status} {full_name[:13] + '...' if full_name and len(full_name) > 10 else full_name or 'Unknown'} ( {unread_count} )"
         markup.add(InlineKeyboardButton(display_text, callback_data=f'user:{user.id}'))
 
-    markup.add(InlineKeyboardButton('↩️ Back', callback_data='back_to_sessions'))
-    bot.edit_message_text('Select a user:', chat_id, message_id, reply_markup=markup)
+    markup.add(
+        InlineKeyboardButton('🔄', callback_data=f'refresh:{session_name}'),
+        InlineKeyboardButton('↩️ Back', callback_data='back_to_sessions')
+    )
+    bot.edit_message_text(f'Select a user:\nCode: {random_code}', chat_id, message_id, reply_markup=markup)
 
 @bot.message_handler(commands=['back'])
 def back_command(message):
@@ -777,6 +781,16 @@ def start_message(message):
 
     loop.close()
     bot.edit_message_text('Select an account:', chat_id, msg.message_id, reply_markup=markup)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('refresh:'))
+def handle_refresh(call):
+    chat_id = call.message.chat.id
+    session_name = call.data.split('refresh:')[1]
+    #bot.edit_message_text('Refreshing users...', chat_id, call.message.message_id)
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(refresh_users_list(chat_id, session_name, call.message.message_id))
+    loop.close()
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('session:'))
 def handle_session_selection(call):
